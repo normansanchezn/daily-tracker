@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Daily Meeting 2026</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --surface: #f9fafb;
+            --border: #e5e7eb;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --primary: #000000;
+            --primary-invert: #ffffff;
+            --radius-md: 16px;
+            --radius-pill: 9999px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --surface: #111111;
+                --border: #222222;
+                --text-main: #f9fafb;
+                --text-muted: #9ca3af;
+                --primary: #ffffff;
+                --primary-invert: #000000;
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
+
+        /* --- Sidebar --- */
+        .sidebar { width: 380px; display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--border); }
+        .sidebar-header { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+        .analytics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .analytic-card { background: var(--bg); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border); text-align: center; }
+        .analytic-card span { display: block; font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
+        
+        .cal-grid-container { padding: 0 24px 20px; }
+        .cal-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 8px; text-align: center; }
+        .cal-weekday { font-size: 0.65rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .cal-day { 
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center; 
+            font-size: 0.8rem; border-radius: 50%; cursor: pointer; transition: var(--transition);
+            border: 1px solid transparent; position: relative;
+        }
+        .cal-day.active { background: var(--primary); color: var(--primary-invert); font-weight: 700; }
+        .cal-day.has-data:not(.active) { border-color: var(--text-muted); }
+        .cal-day.empty { cursor: default; }
+
+        .entries-list { flex: 1; overflow-y: auto; padding: 0 16px 20px; }
+        .entry-item { padding: 16px; border-radius: var(--radius-md); cursor: pointer; border: 1px solid transparent; transition: var(--transition); margin-bottom: 4px; }
+        .entry-item.active { background: var(--bg); border-color: var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+        /* --- Editor & Welcome Screen --- */
+        .editor-view { flex: 1; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+        .editor-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; min-height: 73px; }
+        .editor-content { flex: 1; overflow-y: auto; padding: 40px 60px; max-width: 800px; margin: 0 auto; width: 100%; position: relative; }
+
+        .btn-close-view {
+            position: absolute; top: 24px; right: 24px; background: none; border: none;
+            font-size: 24px; color: var(--text-muted); cursor: pointer; z-index: 10;
+            padding: 8px; transition: var(--transition); line-height: 1;
+        }
+        .btn-close-view:hover { color: var(--text-main); transform: scale(1.1); }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 40px; text-align: center; animation: fadeIn 0.8s ease;
+        }
+        .welcome-icon-stack { position: relative; margin-bottom: 40px; }
+        .icon-main { font-size: 64px; animation: float 3s ease-in-out infinite; }
+        .icon-sub { position: absolute; font-size: 24px; bottom: -10px; right: -10px; animation: float 3s ease-in-out infinite reverse; }
+
+        .tutorial-steps { display: flex; flex-direction: column; gap: 24px; max-width: 400px; margin-top: 40px; }
+        .step { display: flex; align-items: flex-start; gap: 16px; text-align: left; opacity: 0; animation: slideIn 0.5s forwards; }
+        .step:nth-child(1) { animation-delay: 0.3s; }
+        .step:nth-child(2) { animation-delay: 0.6s; }
+        .step:nth-child(3) { animation-delay: 0.9s; }
+        
+        .step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; }
+        .step-text h4 { font-size: 1rem; margin-bottom: 4px; }
+        .step-text p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.4; }
+
+        /* Form Elements */
+        .date-label { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; margin-bottom: 4px; display: block; }
+        .main-title { font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 20px; }
+        .field-group { margin-bottom: 32px; }
+        .field-group label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .input-underlined { border: none; border-bottom: 1px solid var(--border); background: none; width: 100%; padding: 8px 0; font-size: 1.1rem; color: var(--text-main); outline: none; }
+        
+        /* Bullets */
+        .bullet-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+        .bullet-status { width: 24px; height: 24px; border-radius: 6px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-top: 4px; font-size: 0.7rem; }
+        .bullet-status.done { background: #10b981; border-color: #10b981; color: white; }
+        .bullet-status.progress { background: #3b82f6; border-color: #3b82f6; color: white; }
+        .bullet-text { flex: 1; border: none; outline: none; background: none; color: inherit; font-size: 1.05rem; line-height: 1.5; resize: none; overflow: hidden; }
+
+        .btn-new { background: var(--primary); color: var(--primary-invert); border: none; padding: 14px; border-radius: var(--radius-pill); font-weight: 700; cursor: pointer; width: calc(100% - 48px); margin: 0 24px 24px; }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; }
+            .editor-view { position: fixed; inset: 0; transform: translateX(100%); z-index: 100; }
+            .editor-view.is-open { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container" style="display:flex; width: 100%;">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2 style="font-weight: 800;">Daily History</h2>
+            <div class="analytics-grid">
+                <div class="analytic-card"><span>Total</span><strong id="statTotal">0</strong></div>
+                <div class="analytic-card"><span>Mes</span><strong id="statMonth">0%</strong></div>
+                <div class="analytic-card"><span>Año</span><strong id="statYear">0%</strong></div>
+            </div>
+        </div>
+
+        <div class="cal-grid-container">
+            <div class="cal-header">
+                <div class="cal-weekday">Lu</div><div class="cal-weekday">Ma</div><div class="cal-weekday">Mi</div>
+                <div class="cal-weekday">Ju</div><div class="cal-weekday">Vi</div><div class="cal-weekday">Sa</div>
+                <div class="cal-weekday">Do</div>
+            </div>
+            <div class="cal-grid" id="calendarGrid"></div>
+        </div>
+
+        <div class="entries-list" id="entriesList"></div>
+        <button class="btn-new" onclick="createNew()">+ Nuevo Registro</button>
+    </aside>
+
+    <main class="editor-view" id="editorView">
+        <header class="editor-header" id="editorHeader" style="display:none;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button onclick="closeEditor()" style="background:none; border:none; cursor:pointer; font-size: 1.2rem;">←</button>
+                <div id="saveMsg" style="font-size: 0.8rem; color: #10b981; font-weight: 600; opacity:0;">Guardado local</div>
+            </div>
+            <button onclick="deleteEntry()" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight: 600;">Eliminar entrada</button>
+        </header>
+
+        <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-icon-stack">
+                <div class="icon-main">🚀</div>
+                <div class="icon-sub">📝</div>
+            </div>
+            <h2 style="font-size: 2rem; font-weight: 800; margin-bottom: 12px;">Comienza tu Daily</h2>
+            <p style="color: var(--text-muted); max-width: 450px;">Organiza tu flujo de trabajo de forma profesional y mantén un registro impecable de tus avances diarios.</p>
+            <div class="tutorial-steps">
+                <div class="step"><div class="step-num">1</div><div class="step-text"><h4>Crea un nuevo registro</h4><p>Haz clic en el botón negro <strong>"+ Nuevo Registro"</strong> abajo a la izquierda para iniciar el día.</p></div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-text"><h4>Define estados por tarea</h4><p>Escribe tus bullets y haz clic en el icono a su izquierda para alternar entre <strong>Pendiente, En curso o Hecho</strong>.</p></div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-text"><h4>Navega en el historial</h4><p>Selecciona cualquier día en el <strong>calendario</strong> o en la <strong>lista lateral</strong> para mostrar la información guardada.</p></div></div>
+            </div>
+        </div>
+
+        <div class="editor-content" id="editorContent" style="display:none;">
+            <button class="btn-close-view" onclick="closeEditor()">✕</button>
+            <span class="date-label" id="displayDate">Cargando fecha...</span>
+            <h1 class="main-title">Daily Meeting</h1>
+            <div class="field-group"><label>👤 Responsable</label><input type="text" class="input-underlined" id="inpOwner" placeholder="¿Quién presenta hoy?"></div>
+            <div class="field-group"><label>🗓️ Ayer</label><div id="container-yesterday"></div></div>
+            <div class="field-group"><label>🎯 Hoy</label><div id="container-today"></div></div>
+            <div class="field-group"><label>🚧 Bloqueos</label><div id="container-blockers"></div></div>
+        </div>
+    </main>
+</div>
+
+<script>
+    const DB_KEY = 'daily_2026_storage_v1';
+    let state = { entries: JSON.parse(localStorage.getItem(DB_KEY)) || [], activeId: null, filterDate: null };
+
+    const formatDateFriendly = (dateObj) => {
+        return dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+    };
+
+    function sync() {
+        localStorage.setItem(DB_KEY, JSON.stringify(state.entries));
+        renderList(); renderCalendar(); updateAnalytics();
+        const msg = document.getElementById('saveMsg');
+        msg.style.opacity = 1; setTimeout(() => msg.style.opacity = 0, 1500);
+    }
+
+    function createNew() {
+        if (state.entries.length > 0) {
+            const last = state.entries[0];
+            const hasContent = (last.owner.trim() !== "") || 
+                             last.yesterday.some(b => b.text.trim() !== "") ||
+                             last.today.some(b => b.text.trim() !== "") ||
+                             last.blockers.some(b => b.text.trim() !== "");
+            
+            if (!hasContent) {
+                alert("La última entrada está vacía. Por favor, complétala antes de crear una nueva.");
+                openEntry(last.id);
+                return;
+            }
+        }
+
+        const id = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+        const now = new Date();
+        const dateISO = now.toISOString().split('T')[0];
+        
+        const newEntry = { 
+            id, date: dateISO, created_at: now.toISOString(), owner: "", 
+            yesterday: [{text: "", status: 'pending'}], today: [{text: "", status: 'pending'}], blockers: [{text: "", status: 'pending'}] 
+        };
+
+        state.entries.unshift(newEntry);
+        openEntry(id); sync();
+    }
+
+    function openEntry(id) {
+        state.activeId = id;
+        const entry = state.entries.find(e => e.id === id);
+        document.getElementById('welcomeScreen').style.display = 'none';
+        document.getElementById('editorHeader').style.display = 'flex';
+        document.getElementById('editorContent').style.display = 'block';
+        document.getElementById('editorView').classList.add('is-open');
+        const entryDate = new Date(entry.date + "T00:00:00"); 
+        document.getElementById('displayDate').innerText = formatDateFriendly(entryDate);
+        document.getElementById('inpOwner').value = entry.owner || "";
+        renderBullets('yesterday', entry.yesterday);
+        renderBullets('today', entry.today);
+        renderBullets('blockers', entry.blockers);
+        renderList();
+    }
+
+    function renderBullets(type, items) {
+        const container = document.getElementById(`container-${type}`);
+        container.innerHTML = '';
+        items.forEach((item, index) => {
+            const row = document.createElement('div');
+            row.className = 'bullet-row';
+            const statusIcon = item.status === 'done' ? '✓' : (item.status === 'progress' ? '●' : '');
+            row.innerHTML = `<div class="bullet-status ${item.status}" onclick="toggleStatus('${type}', ${index})">${statusIcon}</div>
+                <textarea class="bullet-text" placeholder="Escribe aquí...">${item.text}</textarea>`;
+            const txt = row.querySelector('textarea');
+            txt.oninput = (e) => { item.text = e.target.value; autoResize(txt); sync(); };
+            txt.onkeydown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addBullet(type); } 
+                else if (e.key === 'Backspace' && txt.value === '' && items.length > 1) { e.preventDefault(); removeBullet(type, index); }
+            };
+            container.appendChild(row);
+            autoResize(txt);
+        });
+    }
+
+    function toggleStatus(type, index) {
+        const entry = state.entries.find(e => e.id === state.activeId);
+        const curr = entry[type][index].status;
+        entry[type][index].status = curr === 'pending' ? 'progress' : (curr === 'progress' ? 'done' : 'pending');
+        renderBullets(type, entry[type]); sync();
+    }
+
+    function addBullet(type) {
+        const entry = state.entries.find(e => e.id === state.activeId);
+        entry[type].push({ text: "", status: 'pending' });
+        renderBullets(type, entry[type]); sync();
+        const rows = document.getElementById(`container-${type}`).querySelectorAll('.bullet-text');
+        rows[rows.length - 1].focus();
+    }
+
+    function removeBullet(type, index) {
+        const entry = state.entries.find(e => e.id === state.activeId);
+        entry[type].splice(index, 1);
+        renderBullets(type, entry[type]); sync();
+        const container = document.getElementById(`container-${type}`);
+        const rows = container.querySelectorAll('.bullet-text');
+        const prevIndex = Math.max(0, index - 1);
+        if (rows[prevIndex]) { rows[prevIndex].focus(); rows[prevIndex].setSelectionRange(rows[prevIndex].value.length, rows[prevIndex].value.length); }
+    }
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '';
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+
+        // Obtener el primer día del mes actual
+        const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+        // Ajustar para que el Lunes sea el primer día (JS: 0=Dom, 1=Lun...)
+        let startDay = firstDayOfMonth.getDay();
+        startDay = startDay === 0 ? 6 : startDay - 1; // Convertir a 0=Lun, 6=Dom
+
+        // Espacios vacíos antes del inicio del mes
+        for (let i = 0; i < startDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'cal-day empty';
+            grid.appendChild(empty);
+        }
+
+        // Días del mes
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateObj = new Date(currentYear, currentMonth, day);
+            const dStr = dateObj.toISOString().split('T')[0];
+            const hasData = state.entries.some(e => e.date === dStr);
+            
+            const div = document.createElement('div');
+            div.className = `cal-day ${state.filterDate === dStr ? 'active' : ''} ${hasData ? 'has-data' : ''}`;
+            div.innerText = day;
+            div.onclick = () => { 
+                state.filterDate = state.filterDate === dStr ? null : dStr; 
+                renderCalendar(); renderList(); 
+            };
+            grid.appendChild(div);
+        }
+    }
+
+    function renderList() {
+        const list = document.getElementById('entriesList');
+        const filtered = state.entries.filter(e => !state.filterDate || e.date === state.filterDate);
+        list.innerHTML = filtered.map(e => {
+            const entryDate = new Date(e.date + "T00:00:00");
+            return `<div class="entry-item ${state.activeId === e.id ? 'active' : ''}" onclick="openEntry('${e.id}')">
+                <div style="font-size: 0.75rem; color: var(--text-muted);">${formatDateFriendly(entryDate)}</div>
+                <div style="font-weight: 700;">${e.owner || 'Sin responsable'}</div>
+            </div>`}).join('');
+    }
+
+    function deleteEntry() {
+        if(confirm('¿Eliminar permanentemente esta entrada?')) {
+            state.entries = state.entries.filter(e => e.id !== state.activeId);
+            state.activeId = null; sync(); closeEditor();
+        }
+    }
+
+    function closeEditor() {
+        document.getElementById('editorView').classList.remove('is-open');
+        document.getElementById('welcomeScreen').style.display = 'flex';
+        document.getElementById('editorHeader').style.display = 'none';
+        document.getElementById('editorContent').style.display = 'none';
+        state.activeId = null; renderList();
+    }
+
+    function autoResize(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+
+    function updateAnalytics() {
+        const total = state.entries.length;
+        document.getElementById('statTotal').innerText = total;
+        document.getElementById('statMonth').innerText = Math.min(100, Math.round((total / 20) * 100)) + '%';
+        document.getElementById('statYear').innerText = Math.min(100, Math.round((total / 240) * 100)) + '%';
+    }
+
+    document.getElementById('inpOwner').oninput = (e) => {
+        state.entries.find(entry => entry.id === state.activeId).owner = e.target.value; sync();
+    };
+
+    renderCalendar(); renderList(); updateAnalytics();
+</script>
+</body>
+</html>
